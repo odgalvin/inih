@@ -106,7 +106,7 @@ int ini_parse_stream(ini_reader reader, void* stream, ini_handler handler,
         return -2;
     }
 #endif
-    *line = NULL;
+    *line = (char)NULL;
 
 #if INI_HANDLER_LINENO
 #define HANDLER(u, s, n, v) handler(u, s, n, v, lineno)
