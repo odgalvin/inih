@@ -106,6 +106,7 @@ int ini_parse_stream(ini_reader reader, void* stream, ini_handler handler,
         return -2;
     }
 #endif
+    *line = NULL;
 
 #if INI_HANDLER_LINENO
 #define HANDLER(u, s, n, v) handler(u, s, n, v, lineno)
@@ -136,64 +137,65 @@ int ini_parse_stream(ini_reader reader, void* stream, ini_handler handler,
 #endif
 
         lineno++;
-
-        start = line;
+        if(*line) {
+            start = line;
 #if INI_ALLOW_BOM
-        if (lineno == 1 && start[0] == (char)0xEF &&
-                           start[1] == (char)0xBB &&
-                           start[2] == (char)0xBF) {
-            start += 3;
-        }
+            if (lineno == 1 && start[0] == (char)0xEF &&
+                               start[1] == (char)0xBB &&
+                               start[2] == (char)0xBF) {
+                start += 3;
+            }
 #endif
-        start = lskip(rstrip(start));
+            start = lskip(rstrip(start));
 
-        if (strchr(INI_START_COMMENT_PREFIXES, *start)) {
-            /* Start-of-line comment */
-        }
+            if (strchr(INI_START_COMMENT_PREFIXES, *start)) {
+                /* Start-of-line comment */
+            }
 #if INI_ALLOW_MULTILINE
-        else if (*prev_name && *start && start > line) {
-            /* Non-blank line with leading whitespace, treat as continuation
-               of previous name's value (as per Python configparser). */
-            if (!HANDLER(user, section, prev_name, start) && !error)
-                error = lineno;
-        }
-#endif
-        else if (*start == '[') {
-            /* A "[section]" line */
-            end = find_chars_or_comment(start + 1, "]");
-            if (*end == ']') {
-                *end = '\0';
-                strncpy0(section, start + 1, sizeof(section));
-                *prev_name = '\0';
-            }
-            else if (!error) {
-                /* No ']' found on section line */
-                error = lineno;
-            }
-        }
-        else if (*start) {
-            /* Not a comment, must be a name[=:]value pair */
-            end = find_chars_or_comment(start, "=:");
-            if (*end == '=' || *end == ':') {
-                *end = '\0';
-                name = rstrip(start);
-                value = end + 1;
-#if INI_ALLOW_INLINE_COMMENTS
-                end = find_chars_or_comment(value, NULL);
-                if (*end)
-                    *end = '\0';
-#endif
-                value = lskip(value);
-                rstrip(value);
-
-                /* Valid name[=:]value pair found, call handler */
-                strncpy0(prev_name, name, sizeof(prev_name));
-                if (!HANDLER(user, section, name, value) && !error)
+            else if (*prev_name && *start && start > line) {
+                /* Non-blank line with leading whitespace, treat as continuation
+                   of previous name's value (as per Python configparser). */
+                if (!HANDLER(user, section, prev_name, start) && !error)
                     error = lineno;
             }
-            else if (!error) {
-                /* No '=' or ':' found on name[=:]value line */
-                error = lineno;
+#endif
+            else if (*start == '[') {
+                /* A "[section]" line */
+                end = find_chars_or_comment(start + 1, "]");
+                if (*end == ']') {
+                    *end = '\0';
+                    strncpy0(section, start + 1, sizeof(section));
+                    *prev_name = '\0';
+                }
+                else if (!error) {
+                    /* No ']' found on section line */
+                    error = lineno;
+                }
+            }
+            else if (*start) {
+                /* Not a comment, must be a name[=:]value pair */
+                end = find_chars_or_comment(start, "=:");
+                if (*end == '=' || *end == ':') {
+                    *end = '\0';
+                    name = rstrip(start);
+                    value = end + 1;
+#if INI_ALLOW_INLINE_COMMENTS
+                    end = find_chars_or_comment(value, NULL);
+                    if (*end)
+                        *end = '\0';
+#endif
+                    value = lskip(value);
+                    rstrip(value);
+
+                    /* Valid name[=:]value pair found, call handler */
+                    strncpy0(prev_name, name, sizeof(prev_name));
+                    if (!HANDLER(user, section, name, value) && !error)
+                        error = lineno;
+                }
+                else if (!error) {
+                    /* No '=' or ':' found on name[=:]value line */
+                    error = lineno;
+                }
             }
         }
 
