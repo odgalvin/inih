@@ -227,7 +227,8 @@ int ini_parse(const char* filename, ini_handler handler, void* user)
     if (!file)
         return -1;
     error = ini_parse_file(file, handler, user);
-    fclose(file);
+    if(fclose(file) == EOF)
+        return -1;
     return error;
 }
 
