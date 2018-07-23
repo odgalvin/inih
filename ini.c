@@ -47,10 +47,10 @@ static char* lskip(const char* s)
     return (char*)s;
 }
 
-/* Return pointer to first char (of chars) or inline comment in given string,
+/* Return pointer to first char (or chars) or inline comment in given string,
    or pointer to null at end of string if neither found. Inline comment must
    be prefixed by a whitespace character to register as a comment. */
-static char* find_chars_or_comment(const char* s, const char* chars)
+static char* find_chars_or_comment(const char* s, /*@null@*/ const char* chars)
 {
 #if INI_ALLOW_INLINE_COMMENTS
     int was_space = 0;
@@ -234,7 +234,7 @@ int ini_parse(const char* filename, ini_handler handler, void* user)
 
 /* An ini_reader function to read the next line from a string buffer. This
    is the fgets() equivalent used by ini_parse_string(). */
-static char* ini_reader_string(char* str, int num, void* stream) {
+static /*@null@*/ char* ini_reader_string(char* str, int num, void* stream) {
     ini_parse_string_ctx* ctx = (ini_parse_string_ctx*)stream;
     const char* ctx_ptr = ctx->ptr;
     size_t ctx_num_left = ctx->num_left;
